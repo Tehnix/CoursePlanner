@@ -1,0 +1,45 @@
+{
+  "manifest_version": 2,
+  
+  "version": "0.0.2",
+  
+  "name": "DTU CoursePlanner Accumulater",
+  "short_name": "CoursePlanner",
+  "description": "Automatically calculate how many ECTS points you've passed, are 
+      taking currently, and have upcoming. It also puts your courses into the four 
+      categories that DTU requires you to have, namely technology core, nature sciences, 
+      electives and project based courses. 
+      It's only tested with a Bsc, but should somewhat work with Msc also.",
+  "icons": { "16": "icon16.png",
+             "48": "icon48.png",
+            "128": "icon128.png" },
+  "options_page": "options.html",
+  "options_ui": {
+      "page": "options.html",
+      "chrome_style": true
+  },
+  "content_scripts": [
+    {
+      "matches": [
+          "http://www.kurser.dtu.dk/_layouts/Studyplanner/*", 
+          "https://www.kurser.dtu.dk/_layouts/Studyplanner/*",
+          "http://kurser.dtu.dk/_layouts/Studyplanner/*",
+          "https://kurser.dtu.dk/_layouts/Studyplanner/*"
+      ],
+      "js": [
+          "jquery.min.js", 
+          "courses.js"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+      "jquery-2.0.3.min.map"
+  ],
+  "permissions": [
+      "storage",
+      "http://www.kurser.dtu.dk/*", 
+      "https://www.kurser.dtu.dk/*",
+      "http://kurser.dtu.dk/*",
+      "https://kurser.dtu.dk/*"
+  ]
+}
