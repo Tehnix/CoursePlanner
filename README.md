@@ -9,4 +9,4 @@ It's only tested with a Bsc, but should somewhat work with Msc also.
 
 # Screenshot
 
-
+![Screenshot of the CoursePlanner extension](https://raw.githubusercontent.com/Tehnix/CoursePlanner/master/Screen%20Shot%202014-12-15%20at%2010.30.06.png)
