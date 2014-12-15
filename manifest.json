@@ -1,15 +1,11 @@
 {
   "manifest_version": 2,
   
-  "version": "0.0.2",
+  "version": "0.0.3",
   
   "name": "DTU CoursePlanner Accumulater",
   "short_name": "CoursePlanner",
-  "description": "Automatically calculate how many ECTS points you've passed, are 
-      taking currently, and have upcoming. It also puts your courses into the four 
-      categories that DTU requires you to have, namely technology core, nature sciences, 
-      electives and project based courses. 
-      It's only tested with a Bsc, but should somewhat work with Msc also.",
+  "description": "Automatically calculate ECTS points from the DTU course planner",
   "icons": { "16": "icon16.png",
              "48": "icon48.png",
             "128": "icon128.png" },
