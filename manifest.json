@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   
-  "version": "0.0.3",
+  "version": "0.0.4",
   
   "name": "DTU CoursePlanner Accumulater",
   "short_name": "CoursePlanner",
@@ -29,7 +29,8 @@
     }
   ],
   "web_accessible_resources": [
-      "jquery-2.0.3.min.map"
+      "jquery-2.0.3.min.map",
+      "options.html"
   ],
   "permissions": [
       "storage",

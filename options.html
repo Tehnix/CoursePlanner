@@ -2,24 +2,29 @@
 <html>
 <head>
     <title>CoursePlanner Options</title>
-    <style>
-        body: { padding: 10px; }
-    </style>
 </head>
 <body>
-     Type in your courses, separated by comma, and the CoursePlanner will use it to categories the courses (remember to save it!).
+    <h1>Set up CoursePlanner</h1>
+     Type in your courses, separated by comma, and the CoursePlanner will use it to categorize <br>
+     the courses (remember to save it!).
      
      <br/><br/>
      
-     Technology Core: <input type="text" id="technologicalCourses" />
+     <table>
+         <tr>
+             <td><b>Technology Core:</b></td>
+             <td><input type="text" id="technologicalCourses" /></td>
+         </tr>
+         <tr>
+             <td><b>Nature Science Courses:</b></td>
+             <td><input type="text" id="natureScienceCourses" /></td>
+         </tr>
+         <tr>
+             <td><b>Project Based Courses:</b></td>
+             <td><input type="text" id="projectBasedCourses" /></td>
+         </tr>
+     </table>
 
-     <br/><br/>
-
-     Nature Science Courses: <input type="text" id="natureScienceCourses" />
-     
-     <br/><br/>
-     Project Based Courses: <input type="text" id="projectBasedCourses" />
-     
      <br/><br/>
      <div id="status"></div>
      <button id="save">Save</button>
@@ -27,21 +32,32 @@
      
      
      <br/><br/><br/>
-     <b>An example of Networktechnology and IT:</b>
+     <h3>Example using <a href="http://www.dtu.dk/Uddannelse/Bachelor/Netvaerksteknologi-og-IT#studieforloeb__studieplan" target="_blank">Networktechnology and IT:</a></h3>
      
      <table>
+         <thead>
+             <th>Category</th>
+             <th>Courses</th>
+         </thead>
          <tr>
-             <td>Technology Core</td>
+             <td><i>Technology Core:</i></td>
              <td>02105,02138,02139,02161,02810,34120,34220,34310,34330</td>
          </tr>
          <tr>
-             <td>Nature Science</td>
+             <td><i>Nature Science:</i></td>
              <td>01005,01008,10024,26027,01017,01035,02402,02403,02405,10044,31400</td>
          </tr>
          <tr>
-             <td>Project Based</td>
+             <td><i>Project Based:</i></td>
              <td>02101,34229,34302,42610</td>
          </tr>
      </table>
+     
+     <br/>
+     Just copy paste the numbers, including commas, into the input boxes at the top.
+     
+     <br/><br/>
+     Your own courses can be found on the DTU website, usually under your bachelor and either the<br>
+     study handbook or the bachelor courseplan.
 </body>
 </html>

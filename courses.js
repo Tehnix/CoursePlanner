@@ -1,98 +1,77 @@
 (function ($) {
+    $.fn.waitUntilExists = function (handler, shouldRunHandlerOnce, isChild) {
+        var found = 'found',
+            $this = $(this.selector),
+            $elements = $this.not(function () { return $(this).data(found); }).each(handler).data(found, true);
+    
+        if (!isChild) {
+            (window.waitUntilExists_Intervals = window.waitUntilExists_Intervals || {})[this.selector] = window.setInterval(function () { $this.waitUntilExists(handler, shouldRunHandlerOnce, true); }, 500);
+        }
+        else if (shouldRunHandlerOnce && $elements.length) {
+            window.clearInterval(window.waitUntilExists_Intervals[this.selector]);
+        }
 
-/**
-* @function
-* @property {object} jQuery plugin which runs handler function once specified element is inserted into the DOM
-* @param {function} handler A function to execute at the time when the element is inserted
-* @param {bool} shouldRunHandlerOnce Optional: if true, handler is unbound after its first invocation
-* @example $(selector).waitUntilExists(function);
-*/
-
-$.fn.waitUntilExists    = function (handler, shouldRunHandlerOnce, isChild) {
-    var found       = 'found';
-    var $this       = $(this.selector);
-    var $elements   = $this.not(function () { return $(this).data(found); }).each(handler).data(found, true);
-
-    if (!isChild)
-    {
-        (window.waitUntilExists_Intervals = window.waitUntilExists_Intervals || {})[this.selector] =
-            window.setInterval(function () { $this.waitUntilExists(handler, shouldRunHandlerOnce, true); }, 500)
-        ;
+        return $this;
     }
-    else if (shouldRunHandlerOnce && $elements.length)
-    {
-        window.clearInterval(window.waitUntilExists_Intervals[this.selector]);
-    }
-
-    return $this;
-}
-
 }(jQuery));
 
+
 (function($){
-    var alreadyParsed = false;
+    var prettifyNumber = function(n) {
+        var ending = 'th';
+        if (n === 1) {
+            ending = 'st';
+        } else if (n === 2) {
+            ending = 'nd';
+        } else if (n === 3) {
+            ending = 'rd';
+        }
+        
+        return n + ending;
+    }
+
     var parseSemesters = function() {
-        // Avoid executing the function more than once.
-        if (alreadyParsed) { return; }
-        alreadyParsed = true;
-        
-        var semesters = {};
-        var plannerDivs = $('.plannerContentDiv');
-        
+        // Data holder for all the semesters
+        var semesters = [],
+            plannerDivs = $('.plannerContentDiv');
+
         plannerDivs.each(function(i) {
             var title = $('.semesterHeader', plannerDivs[i]).first().text(),
                 semester = $('.periodTable', plannerDivs[i]).first(),
                 currentSemester = false,
-                courses = parseCourses(semester),
-                number = i+1,
-                prettyNumber = number + "th";
+                courses = parseCourses(semester);
+            // If there are more than one course table in the semester (typically with
+            // the 3-week courses), then we add that to the 13-week courses.
             if ($('.periodTable', plannerDivs[i]).length > 2) {
                 courses = courses.concat(
                     parseCourses($('.periodTable', plannerDivs[i]).first().next().next())
                 );
             }
+            // The current semester has the title in a different element/class.
             if (title == '') {
-                currentSemester = true;
                 title = $('.presentSemesterHeader', plannerDivs[i]).first().text().slice(0,11);
+                currentSemester = true;
             }
-            if (number == 1) { 
-                prettyNumber = number + "st" ;
-            } else if (number == 2) { 
-                prettyNumber = number + "nd";
-            } else if (number == 3) { 
-                prettyNumber = number + "rd";
-            }
-            
-            semesters[i] = {
+            // Finally, put the data in our container.
+            semesters.push({
                 title: title,
                 current: currentSemester,
-                number: number,
-                prettyNumber: prettyNumber,
+                number: i+1,
+                prettyNumber: prettifyNumber(i+1),
                 courses: courses
-            }
+            });
         });
-        
-        chrome.storage.sync.get(null, function(options) {
-            options.technologicalCourses
-            constructTopBar(
-                semesters,
-                options.technologicalCourses.split(','),
-                options.natureScienceCourses.split(','),
-                options.projectBasedCourses.split(',')
-            );
-        });
+
+        return semesters;
     }
-    
+
     var parseCourses = function(semester) {
         // The first tr in the table is the table header, so we
         // ignore that.
         var courses = $('tr', semester).slice(1);
         var courseCollection = [];
-        
         courses.each(function(i) {
-            var courseNumber = $('.coursecode', courses[i]).text().split(" ").slice(0,1)[0],
-                courseECTS = $('.ects', courses[i]).text().split(" ").slice(0,1)[0],
-                courseStatus = $('.CourseStatus', courses[i]).text(),
+            var courseStatus = $('.CourseStatus', courses[i]).text(),
                 passed = undefined,
                 ongoing = undefined,
                 upcoming = undefined;
@@ -108,19 +87,21 @@ $.fn.waitUntilExists    = function (handler, shouldRunHandlerOnce, isChild) {
             } else if (courseStatus === 'planned' || courseStatus === 'planlagt') {
                 planned = true;
             }
+            // Put the data in our array for courses from that semester
             courseCollection.push({
-                number: courseNumber,
-                ECTS: courseECTS,
+                number: $('.coursecode', courses[i]).text().split(" ").slice(0,1)[0],
+                ECTS: $('.ects', courses[i]).text().split(" ").slice(0,1)[0],
                 passed: passed,
                 ongoing: ongoing,
                 upcoming: upcoming,
                 planned: planned
             });
         });
+
         return courseCollection;
     }
-    
-    var getCourses= function(semester, check) {
+
+    var countECTSPoints = function(semester, check) {
         var points = 0.0;
         for(i in semester.courses) {
             var course = semester.courses[i];
@@ -130,88 +111,101 @@ $.fn.waitUntilExists    = function (handler, shouldRunHandlerOnce, isChild) {
         }
         return points;
     }
-    
-    var getCategory = function(semester, check, categoryCourses) {
-        var points = 0.0;
-        for(i in semester.courses) {
-            var course = semester.courses[i];
-            if (check(course) && categoryCourses.indexOf(course.number) > -1) {
-                points += parseFloat(course.ECTS.replace(',', '.'));
-            }
+
+    var getPoints = function(semesters, techCourses, natureCourses, projectCourses) {
+        var points = {
+            passed: 0,
+            ongoing: 0,
+            upcoming: 0,
+            tech: 0,
+            free: 0,
+            nature: 0,
+            project: 0,
+            ongoingTech: 0,
+            ongoingFree: 0,
+            ongoingNature: 0,
+            ongoingProject: 0,
         }
-        return points;
-    }
-    
-    var getFree = function(semester, check, techCourses, natureCourses, projectCourses) {
-        var points = 0.0;
-        for(i in semester.courses) {
-            var course = semester.courses[i];
-            if (check(course) 
-                && techCourses.indexOf(course.number) === -1
-                && natureCourses.indexOf(course.number) === -1
-                && projectCourses.indexOf(course.number) === -1) {
-                points += parseFloat(course.ECTS.replace(',', '.'));
-            }
-        }
-        return points;
-    }
-    
-    var constructTopBar = function(semesters, techCourses, natureCourses, projectCourses) {
-        var title = '',
-            passed = 0,
-            tech = 0,
-            ongoingTech = 0,
-            free = 0,
-            ongoingFree = 0,
-            nature = 0,
-            ongoingNature = 0,
-            project = 0,
-            ongoingProject = 0,
-            ongoing = 0,
-            upcoming = 0;
         for (i in semesters) {
-            var semester = semesters[i];
-            if (semester.current) {
-                title = semester.prettyNumber;
-            }
-            passed += getCourses(semester, function(c) { return c.passed; });
-            ongoing += getCourses(semester, function(c) { return c.ongoing; });
-            upcoming += getCourses(semester, function(c) { return c.upcoming; });
-            tech += getCategory(semester, function(c) { return c.passed; }, techCourses);
-            nature += getCategory(semester, function(c) { return c.passed; }, natureCourses);
-            project += getCategory(semester, function(c) { return c.passed; }, projectCourses);
-            free += getFree(semester, function(c) { return c.passed; }, techCourses, natureCourses, projectCourses);
-            ongoingTech += getCategory(semester, function(c) { return c.ongoing; }, techCourses);
-            ongoingNature += getCategory(semester, function(c) { return c.ongoing; }, natureCourses);
-            ongoingProject += getCategory(semester, function(c) { return c.ongoing; }, projectCourses);
-            ongoingFree += getFree(semester, function(c) { return c.ongoing; }, techCourses, natureCourses, projectCourses);
+            var s = semesters[i];
+            // Accumulate all the points from the semesters
+            points.passed += countECTSPoints(s, function(c) { return c.passed; });
+            points.ongoing += countECTSPoints(s, function(c) { return c.ongoing; });
+            points.upcoming += countECTSPoints(s, function(c) { return c.upcoming; });
+            points.tech += countECTSPoints(s, function(c) { return c.passed && techCourses.indexOf(c.number) > -1; });
+            points.nature += countECTSPoints(s, function(c) { return c.passed && natureCourses.indexOf(c.number) > -1; ; });
+            points.project += countECTSPoints(s, function(c) { return c.passed && projectCourses.indexOf(c.number) > -1; ; });
+            points.free += countECTSPoints(s, function(c) { return c.passed && techCourses.indexOf(c.number) === -1 && natureCourses.indexOf(c.number) === -1 && projectCourses.indexOf(c.number) === -1; ; });
+            points.ongoingTech += countECTSPoints(s, function(c) { return c.ongoing && techCourses.indexOf(c.number) > -1; ; });
+            points.ongoingNature += countECTSPoints(s, function(c) { return c.ongoing && natureCourses.indexOf(c.number) > -1; ; });
+            points.ongoingProject += countECTSPoints(s, function(c) { return c.ongoing && projectCourses.indexOf(c.number) > -1; ; });
+            points.ongoingFree += countECTSPoints(s, function(c) { return c.ongoing&& techCourses.indexOf(c.number) === -1 && natureCourses.indexOf(c.number) === -1 && projectCourses.indexOf(c.number) === -1; });
         }
-        $('body').prepend(
-            '<div style="text-align: center;margin: 10px 5px 0 10px;">'
+        return points;
+    }
+
+    var constructTopBar = function(semesters, techCourses, natureCourses, projectCourses) {
+        var points = getPoints(semesters, techCourses, natureCourses, projectCourses),
+            title = semesters.filter(function(s){return s.current});
+        if (title.length > 0) {
+            title = title[0].prettyNumber;
+        }
+        var topbar = '<div style="text-align: center;margin: 10px 5px 0 10px;">'
             + '<b>Current semester:</b> ' + title 
-            + ', <span style="display:inline-block;width:15px;"> </span>'
-            + '<b>Passed:</b> <span style="color:green;">' + passed + '</span> ECTS'
-            + ', <span style="display:inline-block;width:15px;"> </span>'
-            + '<b>Ongoing:</b> <span style="color:black;">' + ongoing + '</span> ECTS'
-            + ', <span style="display:inline-block;width:15px;"> </span>'
-            + '<b>Upcoming:</b> <span style="color:black;">' + upcoming + '</span> ECTS'
-            + '<br>'
-            + '<b>Technology Core:</b> <span style="color:blue;">' + tech 
-            + '</span> <span style="color:grey;">(' + ongoingTech + ')</span> ECTS'
-            + ', <span style="display:inline-block;width:15px;"> </span>'
-            + '<b>Electives:</b> <span style="color:black;">' + free 
-            + '</span> <span style="color:grey;">(' + ongoingFree + ')</span> ECTS'
-            + ', <span style="display:inline-block;width:15px;"> </span>'
-            + '<b>Nature Science:</b> <span style="color:green;">' + nature 
-            + '</span> <span style="color:grey;">(' + ongoingNature + ')</span> ECTS'
-            + ', <span style="display:inline-block;width:15px;"> </span>'
-            + '<b>Project Based:</b> <span style="color:purple;">' + project 
-            + '</span> <span style="color:grey;">(' + ongoingProject + ')</span> ECTS'
-            + '</div>'
-        );
+                + ', <span style="display:inline-block;width:15px;"> </span>'
+            + '<b>Passed:</b> <span style="color:green;">' + points.passed + '</span> ECTS'
+                + ', <span style="display:inline-block;width:15px;"> </span>'
+            + '<b>Ongoing:</b> <span style="color:black;">' + points.ongoing + '</span> ECTS'
+                + ', <span style="display:inline-block;width:15px;"> </span>'
+            + '<b>Upcoming:</b> <span style="color:black;">' + points.upcoming + '</span> ECTS';
+        var categorizedCourses = '<br>'
+            + '<b>Technology Core:</b> <span style="color:blue;">' + points.tech 
+            + '</span> <span style="color:grey;">(' + points.ongoingTech + ')</span> ECTS'
+                + ', <span style="display:inline-block;width:15px;"> </span>'
+            + '<b>Electives:</b> <span style="color:black;">' + points.free 
+            + '</span> <span style="color:grey;">(' + points.ongoingFree + ')</span> ECTS'
+                + ', <span style="display:inline-block;width:15px;"> </span>'
+            + '<b>Nature Science:</b> <span style="color:green;">' + points.nature 
+            + '</span> <span style="color:grey;">(' + points.ongoingNature + ')</span> ECTS'
+                + ', <span style="display:inline-block;width:15px;"> </span>'
+            + '<b>Project Based:</b> <span style="color:purple;">' + points.project 
+            + '</span> <span style="color:grey;">(' + points.ongoingProject + ')</span> ECTS'
+            + '</div>';
+        // If the user hasn't set any courses in the options, there's no need to show
+        // the categorized courses.
+        if ((techCourses.join(',').length + natureCourses.join(',').length + projectCourses.join(',').length) !== 0) {
+            topbar += categorizedCourses;
+        } else {
+            var optionsPage = chrome.extension.getURL("options.html");
+            topbar += '<br><a href="' + optionsPage + '">set up courses in extension options</a>';
+        }
+        $('body').prepend(topbar);
     }
     
+    var initExtension = function() {
+        // Avoid reexecuting the function.
+        if (alreadyParsed) { return; }
+        alreadyParsed = true;
+
+        // We construct the top bar using the options the user has supplied
+        // in the extension settings.
+        chrome.storage.sync.get({
+            technologicalCourses: '',
+            natureScienceCourses: '',
+            projectBasedCourses: ''
+        }, function(options) {
+            // Avoid executing the function more than once.
+            constructTopBar(
+                parseSemesters(),
+                options.technologicalCourses.split(','),
+                options.natureScienceCourses.split(','),
+                options.projectBasedCourses.split(',')
+            );
+        });
+    }
+
     // CampusNet inserts the elements dynamically, so we have to wait
     // for it to exist.
-    $('tr.ContentMain').waitUntilExists(parseSemesters);
+    var alreadyParsed = false;
+    $('tr.ContentMain').waitUntilExists(initExtension);
 })(jQuery);
