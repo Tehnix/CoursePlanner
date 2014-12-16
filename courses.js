@@ -37,16 +37,15 @@
 
         plannerDivs.each(function(i) {
             var title = $('.semesterHeader', plannerDivs[i]).first().text(),
-                semester = $('.periodTable', plannerDivs[i]).first(),
+                semester = $('.periodTable', plannerDivs[i]),
                 currentSemester = false,
-                courses = parseCourses(semester);
+                courses = [];
             // If there are more than one course table in the semester (typically with
             // the 3-week courses), then we add that to the 13-week courses.
-            if ($('.periodTable', plannerDivs[i]).length > 2) {
-                courses = courses.concat(
-                    parseCourses($('.periodTable', plannerDivs[i]).first().next().next())
-                );
-            }
+            semester.each(function(j) {
+                courses = courses.concat(parseCourses(semester[j]));
+            });
+            parseCourses(semester)
             // The current semester has the title in a different element/class.
             if (title == '') {
                 title = $('.presentSemesterHeader', plannerDivs[i]).first().text().slice(0,11);
@@ -151,37 +150,40 @@
 
     var constructTopBar = function(semesters, techCourses, natureCourses, projectCourses) {
         var points = getPoints(semesters, techCourses, natureCourses, projectCourses),
+            optionsPage = chrome.extension.getURL('options.html'),
             title = semesters.filter(function(s){return s.current});
         if (title.length > 0) {
             title = title[0].prettyNumber;
         }
+        var tooltipPassed = 'ECTS points that you have passed',
+            tooltipOngoing = 'ECTS points from ongoing courses',
+            tooltipUpcoming = 'ECTS points from courses that hav\'nt started yet';
         var topbar = '<div style="text-align: center;margin: 10px 5px 0 10px;">'
             + '<b>Current semester:</b> ' + title 
                 + ', <span style="display:inline-block;width:15px;"> </span>'
-            + '<b>Passed:</b> <span style="color:green;">' + points.passed + '</span> ECTS'
+            + '<b>Passed:</b> <span title="' + tooltipPassed + '" style="color:green;">' + points.passed + '</span> ECTS'
                 + ', <span style="display:inline-block;width:15px;"> </span>'
-            + '<b>Ongoing:</b> <span style="color:black;">' + points.ongoing + '</span> ECTS'
+            + '<b>Ongoing:</b> <span title="' + tooltipOngoing + '" style="color:black;">' + points.ongoing + '</span> ECTS'
                 + ', <span style="display:inline-block;width:15px;"> </span>'
-            + '<b>Upcoming:</b> <span style="color:black;">' + points.upcoming + '</span> ECTS';
+            + '<b>Upcoming:</b> <span title="' + tooltipUpcoming + '" style="color:black;">' + points.upcoming + '</span> ECTS';
         var categorizedCourses = '<br>'
-            + '<b>Technology Core:</b> <span style="color:blue;">' + points.tech 
-            + '</span> <span style="color:grey;">(' + points.ongoingTech + ')</span> ECTS'
+            + '<b><a href="' + optionsPage + '">Technology Core:</a></b> <span title="' + tooltipPassed + '" style="color:blue;">' + points.tech 
+            + '</span> <span title="' + tooltipOngoing + '" style="color:grey;">(' + points.ongoingTech + ')</span> ECTS'
                 + ', <span style="display:inline-block;width:15px;"> </span>'
-            + '<b>Electives:</b> <span style="color:black;">' + points.free 
-            + '</span> <span style="color:grey;">(' + points.ongoingFree + ')</span> ECTS'
+            + '<b><a href="' + optionsPage + '">Electives:</a></b> <span title="' + tooltipPassed + '" style="color:black;">' + points.free 
+            + '</span> <span title="' + tooltipOngoing + '" style="color:grey;">(' + points.ongoingFree + ')</span> ECTS'
                 + ', <span style="display:inline-block;width:15px;"> </span>'
-            + '<b>Nature Science:</b> <span style="color:green;">' + points.nature 
-            + '</span> <span style="color:grey;">(' + points.ongoingNature + ')</span> ECTS'
+            + '<b><a href="' + optionsPage + '">Nature Science:</a></b> <span title="' + tooltipPassed + '" style="color:green;">' + points.nature 
+            + '</span> <span title="' + tooltipOngoing + '" style="color:grey;">(' + points.ongoingNature + ')</span> ECTS'
                 + ', <span style="display:inline-block;width:15px;"> </span>'
-            + '<b>Project Based:</b> <span style="color:purple;">' + points.project 
-            + '</span> <span style="color:grey;">(' + points.ongoingProject + ')</span> ECTS'
+            + '<b><a href="' + optionsPage + '">Project Based:</a></b> <span title="' + tooltipPassed + '" style="color:purple;">' + points.project 
+            + '</span> <span title="' + tooltipOngoing + '" style="color:grey;">(' + points.ongoingProject + ')</span> ECTS'
             + '</div>';
         // If the user hasn't set any courses in the options, there's no need to show
         // the categorized courses.
         if ((techCourses.join(',').length + natureCourses.join(',').length + projectCourses.join(',').length) !== 0) {
             topbar += categorizedCourses;
         } else {
-            var optionsPage = chrome.extension.getURL("options.html");
             topbar += '<br><a href="' + optionsPage + '">set up courses in extension options</a>';
         }
         $('body').prepend(topbar);
