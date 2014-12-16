@@ -113,6 +113,11 @@
     }
 
     var getPoints = function(semesters, techCourses, natureCourses, projectCourses) {
+        // Trim away accidental white space added by the user when saving the 
+        // options.
+        techCourses = techCourses.map(function(i){return i.trim()});
+        natureCourses = natureCourses.map(function(i){return i.trim()});
+        projectCourses = projectCourses.map(function(i){return i.trim()});
         var points = {
             passed: 0,
             ongoing: 0,
